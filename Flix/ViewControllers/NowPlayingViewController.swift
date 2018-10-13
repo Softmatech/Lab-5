@@ -28,8 +28,7 @@ class NowPlayingViewController: UIViewController,UITableViewDataSource,UIScrollV
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        //.............................................................indcator
-        // Set up Infinite Scroll loading indicator
+        indicatorSet()
         let frame = CGRect(x: 0, y: tableView.contentSize.height, width: tableView.bounds.size.width, height:InfiniteScrollActivityView.defaultHeight)
         loadingMoreView = InfiniteScrollActivityView(frame: frame)
         loadingMoreView!.isHidden = true
@@ -53,29 +52,6 @@ class NowPlayingViewController: UIViewController,UITableViewDataSource,UIScrollV
         fetchMovies()
     }
     
-    
-    func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        print("@@@@@@@@@@@@@@@@@@@------------------------------------------------------------------>> ")
-        if (!isMoreDataLoading) {
-                        // Calculate the position of one screen length before the bottom of the results
-                        let scrollViewContentHeight = tableView.contentSize.height
-                        let scrollOffsetThreshold = scrollViewContentHeight - tableView.bounds.size.height
-
-                        // When the user has scrolled past the threshold, start requesting
-                        if(scrollView.contentOffset.y > scrollOffsetThreshold && tableView.isDragging) {
-                            isMoreDataLoading = true
-
-                            // Update position of loadingMoreView, and start loading indicator
-                            let frame = CGRect(x: 0, y: tableView.contentSize.height, width: tableView.bounds.size.width, height: InfiniteScrollActivityView.defaultHeight)
-                            loadingMoreView?.frame = frame
-                            loadingMoreView!.startAnimating()
-
-                            // Code to load more results
-//                            loadMoreData()
-                        }
-                    }
-    }
-
 
         func networkErrorAlert(){
             let alertController = UIAlertController(title: "Network Error", message: "It's Seems there is a network error. Please try again later.", preferredStyle: .alert)
@@ -87,39 +63,15 @@ class NowPlayingViewController: UIViewController,UITableViewDataSource,UIScrollV
         fetchMovies()
     }
     
-//    func loadMoreData() {
-//        let url = URL(string: "https://api.themoviedb.org/3/movie/now_playing?api_key=f09a904547a3537c895babf5612886fa")!
-//        let myRequest = URLRequest(url: url, cachePolicy: .reloadIgnoringLocalCacheData, timeoutInterval: 10)
-//        let session = URLSession(configuration: URLSessionConfiguration.default,delegate:nil,delegateQueue:OperationQueue.main)
-//        let task : URLSessionDataTask = session.dataTask(with: myRequest, completionHandler: { (data, response, error) in
-//            // Update flag
-//            self.isMoreDataLoading = false
-//            // Stop the loading indicator
-//            self.loadingMoreView!.stopAnimating()
-//            // ... Use the new data to update the data source ...
-//
-//            // Reload the tableView now that there is new data
-//            // retrieving data
-//            if let error = error {
-//                print(error.localizedDescription)
-//                self.networkErrorAlert()
-//            }
-//            else if let data = data {
-//                let dataDictionnary = try! JSONSerialization.jsonObject(with: data, options: []) as! [String: Any]
-//
-//                let movies = dataDictionnary["results"] as! [[String: Any]]
-//                self.movies = movies
-//                self.tableView.reloadData()
-//            }
-//        })
-//        task.resume()
-//    }
 
     func fetchMovies() {
         MovieApiManager().nowPlayingMovies { (movies: [Movie]?, error: Error?) in
+            self.activityIndicator.startAnimating()
             if let movies = movies {
                 self.movies = movies
+                self.activityIndicator.stopAnimating()
                 self.tableView.reloadData()
+                self.refreshControl.endRefreshing()
             }
         }
 
@@ -151,5 +103,15 @@ class NowPlayingViewController: UIViewController,UITableViewDataSource,UIScrollV
         // Dispose of any resources that can be recreated.
     }
     
+    func indicatorSet(){
+        if activityIndicator.isAnimating == true {
+            activityIndicator.stopAnimating()
+            activityIndicator.isHidden = true
+        }
+        else{
+            activityIndicator.isHidden = true
+            activityIndicator.startAnimating()
+        }
+    }
     
 }

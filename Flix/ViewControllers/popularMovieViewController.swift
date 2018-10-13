@@ -11,6 +11,7 @@ import UIKit
 class popularMovieViewController: UIViewController,UITableViewDataSource,UIScrollViewDelegate {
  
     @IBOutlet weak var tableView: UITableView!
+    @IBOutlet weak var indicatorView: UIActivityIndicatorView!
     
     var movies: [Movie] = []
     var refreshControl: UIRefreshControl!
@@ -24,7 +25,7 @@ class popularMovieViewController: UIViewController,UITableViewDataSource,UIScrol
     
     override func viewDidLoad() {
         super.viewDidLoad()
-
+        indicatorSet()
 //        var insets = tableView.contentInset
 //        insets.bottom += InfiniteScrollActivityView.defaultHeight
 //        tableView.contentInset = insets
@@ -40,6 +41,9 @@ class popularMovieViewController: UIViewController,UITableViewDataSource,UIScrol
         tableView.insertSubview(refreshControl, at: 0)
         tableView.rowHeight = UITableViewAutomaticDimension
         tableView.estimatedRowHeight = 50
+        definesPresentationContext = true
+        refreshControl.addTarget(self, action: #selector(NowPlayingViewController.didPullToRefresh(_:)), for: .valueChanged)
+        tableView.insertSubview(refreshControl, at: 0)
         fetchMovies()
     }
 
@@ -50,9 +54,12 @@ class popularMovieViewController: UIViewController,UITableViewDataSource,UIScrol
     
     func fetchMovies() {
         MovieApiManager().popularMovies { (movies: [Movie]?, error: Error?) in
+            self.indicatorView.startAnimating()
             if let movies = movies {
                 self.movies = movies
+                self.indicatorView.stopAnimating()
                 self.tableView.reloadData()
+                self.refreshControl.endRefreshing()
             }
         }
         
@@ -67,6 +74,26 @@ class popularMovieViewController: UIViewController,UITableViewDataSource,UIScrol
         cell.movie = movies[indexPath.row]
         
         return cell
+    }
+    func networkErrorAlert(){
+        let alertController = UIAlertController(title: "Network Error", message: "It's Seems there is a network error. Please try again later.", preferredStyle: .alert)
+        alertController.addAction(UIAlertAction(title: "Try Again", style: UIAlertActionStyle.default, handler: { (action) in self.fetchMovies()}))
+        self.present(alertController, animated: true)
+    }
+    
+    @objc func didPullToRefresh(_ refreshControl: UIRefreshControl) {
+        self.fetchMovies()
+    }
+    
+    func indicatorSet(){
+        if indicatorView.isAnimating == true {
+            indicatorView.stopAnimating()
+            indicatorView.isHidden = true
+        }
+        else{
+            indicatorView.isHidden = true
+            indicatorView.startAnimating()
+        }
     }
     
 }
